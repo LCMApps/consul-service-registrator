@@ -1,0 +1,36 @@
+{
+  "name": "consul-service-registrator",
+  "version": "1.0.0",
+  "description": "Set of classes for service registration in Consul",
+  "main": "index.js",
+  "scripts": {
+    "lint": "jshint . && jscs .",
+    "test": "mocha --check-leaks --globals _semaphore test/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@gitlab.auroraglobal.com:26/node-modules/consul-service-registrator.git"
+  },
+  "keywords": [
+    "consul",
+    "service",
+    "registration",
+    "discovery"
+  ],
+  "author": "Dmitry Menshikov <dmitriy.menshikov@auroraglobal.com>",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "engines": {
+    "node": ">= 6.2.1"
+  },
+  "dependencies": {
+    "lodash": "^4.12.0"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "jscs": "^3.0.3",
+    "jshint": "^2.9.2",
+    "mocha": "^2.5.1",
+    "randomstring": "^1.1.5",
+    "sinon": "^1.17.4"
+  }
+}
