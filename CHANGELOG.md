@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.1.1
+
+- Passing of options for consul (host, port, secure) instead of passing consul object to IpAddressDetector
+- Options passing of logger to IpAddressDetector
+
 ### 1.1.0
 
 - Passing of options for consul (host, port, secure) instead of passing consul object
