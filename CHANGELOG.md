@@ -4,6 +4,9 @@
 
 - Passing of options for consul (host, port, secure) instead of passing consul object to IpAddressDetector
 - Options passing of logger to IpAddressDetector
+- addHttpCheck method of ServiceRegistrator registers check with checkID that equals to `serviceName.pid.id` where
+  id is a value passed to the method. Previous behaviour was to register check just with checkID=id and it led to
+  problems where few services registers different checks with the same checkID on the same node.
 
 ### 1.1.0
 
