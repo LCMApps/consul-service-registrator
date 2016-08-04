@@ -1,5 +1,11 @@
 # Changelog
 
+### 1.2.0
+
+- New class ServiceObserver that watches for changes of services and notifies on changed checks, addresses,
+  ports and so on
+- Unit test of ServiceRegistrator was fixed
+
 ### 1.1.1
 
 - Passing of options for consul (host, port, secure) instead of passing consul object to IpAddressDetector

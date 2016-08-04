@@ -249,7 +249,7 @@ describe('ServiceRegistrator', function () {
           await_(checkRegPromise);
 
           let checkRegArgs = {
-            id: 'checkid',
+            id: service._serviceId + '.checkid',
             serviceid: service._serviceId,
             name: 'checkname',
             http: 'http://localhost:8080',
@@ -284,7 +284,7 @@ describe('ServiceRegistrator', function () {
           assert.isFalse(service._active);
 
           let checkRegArgs = {
-            id: 'checkid',
+            id: service._serviceId + '.checkid',
             serviceid: service._serviceId,
             name: 'checkname',
             http: 'http://localhost:8080',
@@ -334,7 +334,7 @@ describe('ServiceRegistrator', function () {
           assert.isFalse(service._active);
 
           let checkRegArgs = {
-            id: 'checkid',
+            id: service._serviceId + '.checkid',
             serviceid: service._serviceId,
             name: 'checkname',
             http: 'http://localhost:8080',
