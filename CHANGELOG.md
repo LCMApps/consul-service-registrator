@@ -1,5 +1,9 @@
 # Changelog
 
+### 1.2.1
+
+- IpAddressDetector was refactored: consul options checks was removed and common helper checks that options.
+
 ### 1.2.0
 
 - New class ServiceObserver that watches for changes of services and notifies on changed checks, addresses,
