@@ -3,6 +3,7 @@
 ### 1.2.2
 
 - ServiceRegistrator obtained new method getServiceId
+- ServiceRegistrator: new methods enableMaintenanceMode and disableMaintenanceMode to control maintenance
 
 ### 1.2.1
 
