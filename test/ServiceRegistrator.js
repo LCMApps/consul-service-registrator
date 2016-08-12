@@ -164,6 +164,7 @@ describe('ServiceRegistrator', function () {
             consulRegisterStub.printf('incorrect argument, calls: %C')
           );
           assert.strictEqual(result, registerReturn);
+          assert.equal(service.getServiceId(), arg.id);
         });
 
         callNo++;

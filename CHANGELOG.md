@@ -1,5 +1,10 @@
 # Changelog
 
+### 1.2.2
+
+- ServiceRegistrator obtained new method getServiceId
+- ServiceRegistrator: new methods enableMaintenanceMode and disableMaintenanceMode to control maintenance
+
 ### 1.2.1
 
 - IpAddressDetector was refactored: consul options checks was removed and common helper checks that options.
