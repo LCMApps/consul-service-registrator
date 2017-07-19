@@ -1,9 +1,0 @@
-{
-  "preset": "airbnb",
-
-  "maximumLineLength": { "value": 120 },
-  "requirePaddingNewLinesAfterBlocks": {
-    "allExcept": ["inCallExpressions", "inNewExpressions", "inArrayExpressions", "inProperties", "singleLine"]
-  },
-  "excludeFiles": ["node_modules/**", "README.md", "LICENSE.md"]
-}
