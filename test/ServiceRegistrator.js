@@ -44,7 +44,6 @@ function getFakeConsulObject(promisify) {
 
 describe('ServiceRegistrator', function () {
     describe('#construct', function () {
-        /*jshint nonew: false */
         it('argument must be passed', function () {
             assert.throws(() => {
                 new ServiceRegistrator();
