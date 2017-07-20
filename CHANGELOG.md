@@ -1,4 +1,12 @@
 # Changelog
+### 1.3.0
+
+- Using `net.isIPv4` for validate IPv4 addresses
+- IpAddressDetector not extended from EventEmitter now
+- IpAddressDetector now has only `getLanAndWanFromConsul` method that return
+AdvertiseAddr and AdvertiseAddrWan from Consul Config
+- Added new required argument for ServiceRegistrator's constructor - `serviceId`
+- Remove ttl parameter from `addHttpCheck` method of ServiceRegistrator
 
 ### 1.2.2
 
