@@ -20,7 +20,7 @@
   "author": "Dmitry Menshikov <dmitriy.menshikov@auroraglobal.com>",
   "license": "SEE LICENSE IN LICENSE.md",
   "engines": {
-    "node": ">= 8.1"
+    "node": ">= 6.2.1"
   },
   "dependencies": {
     "consul": "^0.25.0",
