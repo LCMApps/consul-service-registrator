@@ -20,7 +20,7 @@
   "author": "Dmitry Menshikov <d.menshikov@gmail.com>",
   "license": "MIT",
   "engines": {
-    "node": ">= 8.1"
+    "node": ">= 6.2.1"
   },
   "dependencies": {
     "consul": "^0.25.0",

@@ -17,7 +17,7 @@ const errorMessages = {
     ADDRESS_NOT_IPV4:    'address must be an IPv4 IP address',
 };
 
-const CONSUL_OPTIONS = {
+const CONSUL_OPTIONS  = {
     host: '127.0.0.1',
     port: 8500,
 };
@@ -56,7 +56,7 @@ describe('ServiceRegistrator', function () {
         incorrectArguments.forEach((arg) => {
             it('argument must be an object', () => {
                 assert.throws(() => {
-                    new ServiceRegistrator(arg, 'name');
+                    new ServiceRegistrator(arg, 'name', 'name_127.0.0.1_80');
                 }, Error, errorMessages.MUST_BE_OBJECT);
             });
         });
@@ -65,21 +65,21 @@ describe('ServiceRegistrator', function () {
             // this is an object and it should pass this check but fail with another text of Error
             let consulOptions = {};
             assert.throws(() => {
-                new ServiceRegistrator(consulOptions, 'name');
+                new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
             }, Error, errorMessages.MUST_BE_CONSUL);
         });
 
         it('argument is a Consul object with incorect type of host (string) option', () => {
             let consulOptions = {host: {}};
             assert.throws(() => {
-                new ServiceRegistrator(consulOptions, 'name');
+                new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
             }, Error, errorMessages.MUST_BE_CONSUL);
         });
 
         it('argument is a Consul object with incorect type of port (int) option', () => {
             let consulOptions = {port: {}};
             assert.throws(() => {
-                new ServiceRegistrator(consulOptions, 'name');
+                new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
             }, Error, errorMessages.MUST_BE_CONSUL);
         });
 
@@ -91,15 +91,26 @@ describe('ServiceRegistrator', function () {
             let service;
 
             assert.doesNotThrow(() => {
-                service = new ServiceRegistrator(CONSUL_OPTIONS, serviceName);
+                service = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, 'name_127.0.0.1_80');
             });
             assert.equal(service.getServiceName(), serviceName);
+        });
+
+        it('check serviceId', () => {
+            let serviceName = randomstring.generate();
+            let serviceId = serviceName + '_127.0.0.1_80';
+            let service;
+
+            assert.doesNotThrow(() => {
+                service = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, serviceId);
+            });
+            assert.equal(service.getServiceId(), serviceId);
         });
 
         describe('setAddress with invalid type', function () {
             let incorrectArguments = [42, true, null, undefined, Symbol(), () => {
             }, {}];
-            let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+            let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             let testSetAddressFn   = function testSetAddress(arg) {
                 return () => {
                     service.setAddress(arg);
@@ -115,7 +126,7 @@ describe('ServiceRegistrator', function () {
 
         describe('setAddress with valid type and incorrect IP V4 address', function () {
             let incorrectArguments = ['', '256.0.0.0', '-1.0.0.0', '255.0.256.0', '1.1.1.p2', '0000', 'fe80::5efe:c0a8:33c'];
-            let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+            let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             let testSetAddressFn   = function testSetAddress(arg) {
                 return () => {
                     service.setAddress(arg);
@@ -131,7 +142,7 @@ describe('ServiceRegistrator', function () {
 
         it('setAddress with valid argument', function () {
             let consul      = getFakeConsulObject(true);
-            let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+            let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             service._consul = consul;
             service.setAddress('127.0.0.1');
         });
@@ -170,7 +181,7 @@ describe('ServiceRegistrator', function () {
                 let arg  = test.arg;
                 it('test #' + callNo, function () {
                     let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name.' + pid);
                     service._consul = consul;
                     init(service);
 
@@ -218,7 +229,7 @@ describe('ServiceRegistrator', function () {
 
             it('error on register without checks, from consul', function (done) {
                 let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                 service._consul = consul;
 
                 let resolveRegPromise;
@@ -248,7 +259,7 @@ describe('ServiceRegistrator', function () {
             it('register without checks, and then add some checks', function (done) {
                 async_(() => {
                     let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                     service._consul = consul;
 
                     let regPromise         = Promise.resolve();
@@ -266,7 +277,7 @@ describe('ServiceRegistrator', function () {
 
                     assert.isTrue(service._active);
 
-                    let checkRegPromise = service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s', '30s');
+                    let checkRegPromise = service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s');
 
                     firstCheckRegData.resolve();
                     await_(checkRegPromise);
@@ -276,8 +287,7 @@ describe('ServiceRegistrator', function () {
                         serviceid: service._serviceId,
                         name:      'checkname',
                         http:      'http://localhost:8080',
-                        interval:  '10s',
-                        ttl:       '30s',
+                        interval:  '10s'
                     };
 
                     assert.equal(firstCheckRegData.stub.callCount, 1, 'must be called once');
@@ -294,7 +304,7 @@ describe('ServiceRegistrator', function () {
             it('register with checks, that fails', function (done) {
                 async_(() => {
                     let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                     service._consul = consul;
 
                     let regPromise         = Promise.resolve();
@@ -311,10 +321,9 @@ describe('ServiceRegistrator', function () {
                         serviceid: service._serviceId,
                         name:      'checkname',
                         http:      'http://localhost:8080',
-                        interval:  '10s',
-                        ttl:       '30s',
+                        interval:  '10s'
                     };
-                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s', '30s');
+                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s');
 
                     assert.isArray(service._checks);
                     assert.equal(service._checks.length, 1);
@@ -335,7 +344,7 @@ describe('ServiceRegistrator', function () {
                         () => {
                             await_(promise);
                         },
-                        /^Can not register one of checks for the service `\w+\.\d+`, failed with error: Error: check reg error$/
+                        /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/
                     );
 
                     assert.equal(deregisterStub.callCount, 1, 'must be called once');
@@ -346,7 +355,7 @@ describe('ServiceRegistrator', function () {
             it('register with checks, that fails and deregister that fails', function (done) {
                 async_(() => {
                     let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name');
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                     service._consul = consul;
 
                     let regPromise         = Promise.resolve();
@@ -363,10 +372,9 @@ describe('ServiceRegistrator', function () {
                         serviceid: service._serviceId,
                         name:      'checkname',
                         http:      'http://localhost:8080',
-                        interval:  '10s',
-                        ttl:       '30s',
+                        interval:  '10s'
                     };
-                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s', '30s');
+                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s');
 
                     assert.isArray(service._checks);
                     assert.equal(service._checks.length, 1);
@@ -388,7 +396,7 @@ describe('ServiceRegistrator', function () {
                             await_(promise);
                         },
                         new RegExp(
-                            '^Can not register one of checks for the service `\\w+\\.\\d+`, failed with error: ' +
+                            '^Can not register one of checks for the service `\\w+`, failed with error: ' +
                             'Error: check reg error and failed to deregister just started service due to error: `dereg fail`$'
                         )
                     );
