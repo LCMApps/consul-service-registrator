@@ -17,7 +17,7 @@ const errorMessages = {
     ADDRESS_NOT_IPV4:    'address must be an IPv4 IP address',
 };
 
-const CONSUL_OPTIONS  = {
+const CONSUL_OPTIONS = {
     host: '127.0.0.1',
     port: 8500,
 };
@@ -32,6 +32,8 @@ function getFakeConsulObject(promisify) {
                 register:   () => {
                 },
                 deregister: () => {
+                },
+                list:       () => {
                 },
             },
             check:   {
@@ -98,7 +100,7 @@ describe('ServiceRegistrator', function () {
 
         it('check serviceId', () => {
             let serviceName = randomstring.generate();
-            let serviceId = serviceName + '_127.0.0.1_80';
+            let serviceId   = serviceName + '_127.0.0.1_80';
             let service;
 
             assert.doesNotThrow(() => {
@@ -405,6 +407,100 @@ describe('ServiceRegistrator', function () {
                     assert.isTrue(deregisterStub.firstCall.calledWith());
                 })().then(done).catch(done);
             });
+        });
+    });
+
+    describe('#getters', function () {
+        it('get all registered services', function (done) {
+            async_(() => {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
+                service._consul = consul;
+
+                let consulListStub    = sinon.stub(consul.agent.service, 'list');
+
+                let registeredService = {
+                    'name_127.0.0.1_8080': {
+                        'ID':      'name_127.0.0.1_8080',
+                        'Service': 'name',
+                    }
+                };
+
+                let listReturn = new Promise(resolve => {
+                    resolve(registeredService);
+                });
+
+                consulListStub.returns(listReturn);
+                let result = await_(service.checkServiceRegistration());
+
+
+                assert.equal(consulListStub.callCount, 1, 'must be called once');
+                assert.strictEqual(result, registeredService);
+            })().then(done).catch(done);
+        });
+
+        it('get registered service by ServiceID', function (done) {
+            async_(() => {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
+                service._consul = consul;
+
+                let consulListStub = sinon.stub(consul.agent.service, 'list');
+                let registeredServices = {
+                    'name_127.0.0.1_8080': {
+                        'ID':      'name_127.0.0.1_8080',
+                        'Service': 'name',
+                    },
+                    'name_127.0.0.1_8081': {
+                        'ID':      'name_127.0.0.1_8081',
+                        'Service': 'name',
+                    }
+                };
+
+                let listReturn = new Promise(resolve => {
+                    resolve(registeredServices);
+                });
+
+                consulListStub.returns(listReturn);
+                let checkingId = 'name_127.0.0.1_8080';
+                let result = await_(service.checkServiceRegistration(checkingId));
+
+
+                assert.equal(consulListStub.callCount, 1, 'must be called once');
+                assert.strictEqual(result, registeredServices[checkingId]);
+            })().then(done).catch(done);
+        });
+
+        it('get not registered service by ServiceID', function (done) {
+            async_(() => {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
+                service._consul = consul;
+
+                let consulListStub = sinon.stub(consul.agent.service, 'list');
+                let registeredServices = {
+                    'name_127.0.0.1_8080': {
+                        'ID':      'name_127.0.0.1_8080',
+                        'Service': 'name',
+                    },
+                    'name_127.0.0.1_8081': {
+                        'ID':      'name_127.0.0.1_8081',
+                        'Service': 'name',
+                    }
+                };
+
+                let listReturn = new Promise(resolve => {
+                    resolve(registeredServices);
+                });
+
+                consulListStub.returns(listReturn);
+                let checkingId = 'name_127.0.0.2_8082';
+                let result = await_(service.checkServiceRegistration(checkingId));
+
+
+                assert.equal(consulListStub.callCount, 1, 'must be called once');
+                assert.strictEqual(result, null);
+            })().then(done).catch(done);
         });
     });
 });
