@@ -7,7 +7,7 @@
 AdvertiseAddr and AdvertiseAddrWan from Consul Config
 - Added new required argument for ServiceRegistrator's constructor - `serviceId`
 - Remove ttl parameter from `addHttpCheck` method of ServiceRegistrator
-- Add `checkServiceRegistration` method to ServiceRegistrator
+- Add `getServiceById` and `getAllServices` methods to ServiceRegistrator
 
 ### 1.2.2
 

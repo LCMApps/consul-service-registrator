@@ -4,7 +4,7 @@
   "description": "Set of classes for service registration in Consul",
   "main": "index.js",
   "scripts": {
-    "lint": "./node_modules/.bin/eslint ./",
+    "lint": "./node_modules/.bin/eslint ./lib/",
     "test": "mocha --check-leaks --globals _semaphore test/"
   },
   "repository": {
