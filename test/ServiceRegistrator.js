@@ -431,11 +431,25 @@ describe('ServiceRegistrator', function () {
                 });
 
                 consulListStub.returns(listReturn);
-                let result = await_(service.checkServiceRegistration());
-
+                const result = await_(service.getAllServices());
 
                 assert.equal(consulListStub.callCount, 1, 'must be called once');
                 assert.strictEqual(result, registeredService);
+            })().then(done).catch(done);
+        });
+
+        it('error on not valid serviceId parameter for method getServiceById', function (done) {
+            async_(() => {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
+                service._consul = consul;
+
+                // let result = await_(service.getServiceById());
+
+                assert.throws(() => service.getServiceById(), Error);
+
+                // assert.instanceOf(result, Error);
+                // assert.match(result.message, /^options serviceId must be a string but \w* was passe/);
             })().then(done).catch(done);
         });
 
@@ -463,8 +477,7 @@ describe('ServiceRegistrator', function () {
 
                 consulListStub.returns(listReturn);
                 let checkingId = 'name_127.0.0.1_8080';
-                let result = await_(service.checkServiceRegistration(checkingId));
-
+                let result = await_(service.getServiceById(checkingId));
 
                 assert.equal(consulListStub.callCount, 1, 'must be called once');
                 assert.strictEqual(result, registeredServices[checkingId]);
@@ -495,7 +508,7 @@ describe('ServiceRegistrator', function () {
 
                 consulListStub.returns(listReturn);
                 let checkingId = 'name_127.0.0.2_8082';
-                let result = await_(service.checkServiceRegistration(checkingId));
+                let result = await_(service.getServiceById(checkingId));
 
 
                 assert.equal(consulListStub.callCount, 1, 'must be called once');
