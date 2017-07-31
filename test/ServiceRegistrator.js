@@ -32,9 +32,7 @@ function getFakeConsulObject(promisify) {
                 register:   () => {
                 },
                 deregister: () => {
-                },
-                list:       () => {
-                },
+                }
             },
             check:   {
                 register: () => {
@@ -127,6 +125,7 @@ describe('ServiceRegistrator', function () {
         });
 
         describe('setAddress with valid type and incorrect IP V4 address', function () {
+            // eslint-disable-next-line max-len
             let incorrectArguments = ['', '256.0.0.0', '-1.0.0.0', '255.0.256.0', '1.1.1.p2', '0000', 'fe80::5efe:c0a8:33c'];
             let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             let testSetAddressFn   = function testSetAddress(arg) {
@@ -155,25 +154,40 @@ describe('ServiceRegistrator', function () {
                 {
                     init: () => {
                     },
-                    arg:  {name: 'name', id: 'name.' + pid},
+                    arg:  {
+                        name: 'name',
+                        id:   'name.' + pid
+                    },
                 },
                 {
                     init: (service) => {
                         service.setAddress('1.2.3.4');
                     },
-                    arg:  {name: 'name', id: 'name.' + pid, address: '1.2.3.4'},
+                    arg:  {
+                        name:    'name',
+                        id:      'name.' + pid,
+                        address: '1.2.3.4'
+                    },
                 },
                 {
                     init: (service) => {
                         service.setPort(12345);
                     },
-                    arg:  {name: 'name', id: 'name.' + pid, port: 12345},
+                    arg:  {
+                        name: 'name',
+                        id:   'name.' + pid,
+                        port: 12345
+                    },
                 },
                 {
                     init: (service) => {
                         service.setTags(['tag1', 'tag2']);
                     },
-                    arg:  {name: 'name', id: 'name.' + pid, tags: ['tag1', 'tag2']},
+                    arg:  {
+                        name: 'name',
+                        id:   'name.' + pid,
+                        tags: ['tag1', 'tag2']
+                    },
                 },
             ];
             let callNo = 1;
@@ -190,19 +204,67 @@ describe('ServiceRegistrator', function () {
                     let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
                     let registerReturn     = new Promise(() => {
                     });
-                    consulRegisterStub.returns(registerReturn);
-                    let result = service.register();
 
-                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                    assert.isTrue(
-                        consulRegisterStub.firstCall.calledWith(arg),
-                        consulRegisterStub.printf('incorrect argument, calls: %C')
-                    );
-                    assert.strictEqual(result, registerReturn);
-                    assert.equal(service.getServiceId(), arg.id);
+                    consulRegisterStub.returns(registerReturn);
+                    service.register()
+                        .then(() => {
+                            assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                            assert.isTrue(
+                                consulRegisterStub.firstCall.calledWith(arg),
+                                consulRegisterStub.printf('incorrect argument, calls: %C')
+                            );
+                            assert.equal(service.getServiceId(), arg.id);
+                        });
                 });
 
                 callNo++;
+            });
+
+            it('register with overwrite', function () {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name.' + pid);
+                service._consul = consul;
+
+                let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
+                let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
+                let registerReturn       = Promise.resolve();
+                let deregisterReturn     = Promise.resolve();
+
+                consulRegisterStub.returns(registerReturn);
+                consulDeregisterStub.returns(deregisterReturn);
+
+                service.register(true)
+                    .then(() => {
+                        assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
+                        assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                        assert.isTrue(service._active);
+                    });
+
+            });
+
+            it('register with overwrite, that fail', function () {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name123');
+                service._consul = consul;
+
+                let deregisterError      = new Error('Some consul error');
+                let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
+                let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
+                let registerReturn       = Promise.resolve();
+                let deregisterReturn     = Promise.reject(deregisterError);
+
+                consulRegisterStub.returns(registerReturn);
+                consulDeregisterStub.returns(deregisterReturn);
+
+                service.register(true)
+                    .catch((err) => {
+                        assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
+                        assert.equal(consulRegisterStub.callCount, 0);
+                        assert.isTrue(service._active);
+                        assert.match(err.message, new RegExp(
+                            '^Can not deregister service `\\w+`, failed with error: `Some consul error`$'
+                        ));
+                    });
             });
         });
 
@@ -234,6 +296,7 @@ describe('ServiceRegistrator', function () {
                 let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                 service._consul = consul;
 
+                // eslint-disable-next-line no-unused-vars
                 let resolveRegPromise;
                 let rejectRegPromise;
                 let regPromise = new Promise((resolve, reject) => {
@@ -245,12 +308,10 @@ describe('ServiceRegistrator', function () {
                 consulRegisterStub.returns(regPromise);
                 let regResult = service.register();
 
-                assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                assert.strictEqual(regResult, regPromise);
-
                 let regError = new Error('regerr');
 
                 regResult.catch(err => {
+                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
                     assert.strictEqual(err, regError);
                     done();
                 });
@@ -311,6 +372,7 @@ describe('ServiceRegistrator', function () {
 
                     let regPromise         = Promise.resolve();
                     let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
+
                     consulRegisterStub.returns(regPromise);
                     let checkRegPromises  = _checksRegister(consul, 1);
                     let firstCheckRegData = checkRegPromises[0];
@@ -325,7 +387,8 @@ describe('ServiceRegistrator', function () {
                         http:      'http://localhost:8080',
                         interval:  '10s'
                     };
-                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s');
+
+                    await_(service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s'));
 
                     assert.isArray(service._checks);
                     assert.equal(service._checks.length, 1);
@@ -335,22 +398,18 @@ describe('ServiceRegistrator', function () {
                     let deregisterStub = sinon.stub(service, 'deregister');
                     deregisterStub.returns(Promise.resolve());
 
-                    let promise = service.register();
-
-                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                    assert.isTrue(service._active);
-
                     firstCheckRegData.reject(new Error('check reg error'));
 
-                    assert.throws(
-                        () => {
-                            await_(promise);
-                        },
-                        /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/
-                    );
+                    service.register()
+                        .catch(err => {
+                            assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                            assert.isTrue(service._active);
 
-                    assert.equal(deregisterStub.callCount, 1, 'must be called once');
-                    assert.isTrue(deregisterStub.firstCall.calledWith());
+                            // eslint-disable-next-line max-len
+                            assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
+                            assert.equal(deregisterStub.callCount, 1, 'must be called once');
+                            assert.isTrue(deregisterStub.firstCall.calledWith());
+                        });
                 })().then(done).catch(done);
             });
 
@@ -360,9 +419,65 @@ describe('ServiceRegistrator', function () {
                     let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                     service._consul = consul;
 
-                    let regPromise         = Promise.resolve();
+                    let checkRegArgs = {
+                        id:        service._serviceId + '.checkid',
+                        serviceid: service._serviceId,
+                        name:      'checkname',
+                        http:      'http://localhost:8080',
+                        interval:  '10s'
+                    };
+
+                    let checkError         = new Error('check reg error');
+                    let deregisterMsg      = 'deregister fail';
                     let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
+
+                    let consulCheckRegisterStub = sinon.stub(consul.agent.check, 'register');
+                    let deregisterStub          = sinon.stub(consul.agent.service, 'deregister');
+
+                    consulRegisterStub.returns(Promise.resolve());
+                    consulCheckRegisterStub.returns(Promise.reject(checkError));
+                    deregisterStub.returns(Promise.reject(deregisterMsg));
+
+                    assert.isNull(service._checks);
+                    assert.isFalse(service._active);
+
+                    await_(service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s'));
+
+                    assert.isArray(service._checks);
+                    assert.equal(service._checks.length, 1);
+                    assert.strictEqual(JSON.stringify(service._checks[0]), JSON.stringify(checkRegArgs));
+                    assert.isFalse(service._active);
+
+                    service.register()
+                        .catch(err => {
+                            assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                            assert.isFalse(service._active);
+                            assert.match(err.message, new RegExp(
+                                '^Can not register one of checks for the service `\\w+`, failed with error: ' +
+                                'Error: check reg error and failed to deregister just started service due to ' +
+                                'error: `deregister fail`$'
+                            ));
+                            assert.equal(consulCheckRegisterStub.callCount, 1, 'must be called once');
+                            assert.equal(deregisterStub.callCount, 1, 'must be called once');
+                            assert.isTrue(deregisterStub.firstCall.calledWith());
+                        });
+                })().then(done).catch(done);
+            });
+
+            it('overwrite registration with checks, that fails', function (done) {
+                async_(() => {
+                    let consul      = getFakeConsulObject(true);
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                    service._consul = consul;
+
+                    let regPromise           = Promise.resolve();
+                    let deregPromise         = Promise.resolve();
+                    let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
+                    let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
+
                     consulRegisterStub.returns(regPromise);
+                    consulDeregisterStub.returns(deregPromise);
+
                     let checkRegPromises  = _checksRegister(consul, 1);
                     let firstCheckRegData = checkRegPromises[0];
 
@@ -376,144 +491,27 @@ describe('ServiceRegistrator', function () {
                         http:      'http://localhost:8080',
                         interval:  '10s'
                     };
-                    service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s');
+
+                    await_(service.addHttpCheck('checkid', 'checkname', 'http://localhost:8080', '10s'));
 
                     assert.isArray(service._checks);
                     assert.equal(service._checks.length, 1);
                     assert.strictEqual(JSON.stringify(service._checks[0]), JSON.stringify(checkRegArgs));
                     assert.isFalse(service._active);
 
-                    let deregisterStub = sinon.stub(consul.agent.service, 'deregister');
-                    deregisterStub.returns(Promise.reject('dereg fail'));
-
-                    let promise = service.register();
-
-                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                    assert.isTrue(service._active);
-
                     firstCheckRegData.reject(new Error('check reg error'));
 
-                    assert.throws(
-                        () => {
-                            await_(promise);
-                        },
-                        new RegExp(
-                            '^Can not register one of checks for the service `\\w+`, failed with error: ' +
-                            'Error: check reg error and failed to deregister just started service due to error: `dereg fail`$'
-                        )
-                    );
+                    service.register(true)
+                        .catch(err => {
+                            assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                            assert.isFalse(service._active);
 
-                    assert.equal(deregisterStub.callCount, 1, 'must be called once');
-                    assert.isTrue(deregisterStub.firstCall.calledWith());
+                            // eslint-disable-next-line max-len
+                            assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
+                            assert.equal(consulDeregisterStub.callCount, 2, 'must be called twice');
+                        });
                 })().then(done).catch(done);
             });
-        });
-    });
-
-    describe('#getters', function () {
-        it('get all registered services', function (done) {
-            async_(() => {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
-                service._consul = consul;
-
-                let consulListStub    = sinon.stub(consul.agent.service, 'list');
-
-                let registeredService = {
-                    'name_127.0.0.1_8080': {
-                        'ID':      'name_127.0.0.1_8080',
-                        'Service': 'name',
-                    }
-                };
-
-                let listReturn = new Promise(resolve => {
-                    resolve(registeredService);
-                });
-
-                consulListStub.returns(listReturn);
-                const result = await_(service.getAllServices());
-
-                assert.equal(consulListStub.callCount, 1, 'must be called once');
-                assert.strictEqual(result, registeredService);
-            })().then(done).catch(done);
-        });
-
-        it('error on not valid serviceId parameter for method getServiceById', function (done) {
-            async_(() => {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
-                service._consul = consul;
-
-                // let result = await_(service.getServiceById());
-
-                assert.throws(() => service.getServiceById(), Error);
-
-                // assert.instanceOf(result, Error);
-                // assert.match(result.message, /^options serviceId must be a string but \w* was passe/);
-            })().then(done).catch(done);
-        });
-
-        it('get registered service by ServiceID', function (done) {
-            async_(() => {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
-                service._consul = consul;
-
-                let consulListStub = sinon.stub(consul.agent.service, 'list');
-                let registeredServices = {
-                    'name_127.0.0.1_8080': {
-                        'ID':      'name_127.0.0.1_8080',
-                        'Service': 'name',
-                    },
-                    'name_127.0.0.1_8081': {
-                        'ID':      'name_127.0.0.1_8081',
-                        'Service': 'name',
-                    }
-                };
-
-                let listReturn = new Promise(resolve => {
-                    resolve(registeredServices);
-                });
-
-                consulListStub.returns(listReturn);
-                let checkingId = 'name_127.0.0.1_8080';
-                let result = await_(service.getServiceById(checkingId));
-
-                assert.equal(consulListStub.callCount, 1, 'must be called once');
-                assert.strictEqual(result, registeredServices[checkingId]);
-            })().then(done).catch(done);
-        });
-
-        it('get not registered service by ServiceID', function (done) {
-            async_(() => {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_8080');
-                service._consul = consul;
-
-                let consulListStub = sinon.stub(consul.agent.service, 'list');
-                let registeredServices = {
-                    'name_127.0.0.1_8080': {
-                        'ID':      'name_127.0.0.1_8080',
-                        'Service': 'name',
-                    },
-                    'name_127.0.0.1_8081': {
-                        'ID':      'name_127.0.0.1_8081',
-                        'Service': 'name',
-                    }
-                };
-
-                let listReturn = new Promise(resolve => {
-                    resolve(registeredServices);
-                });
-
-                consulListStub.returns(listReturn);
-                let checkingId = 'name_127.0.0.2_8082';
-                let result = await_(service.getServiceById(checkingId));
-
-
-                assert.equal(consulListStub.callCount, 1, 'must be called once');
-                assert.strictEqual(result, null);
-            })().then(done).catch(done);
         });
     });
 });
