@@ -247,7 +247,7 @@ describe('ServiceRegistrator', function () {
                 let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name123');
                 service._consul = consul;
 
-                let deregisterError      = new Error('Some consul error');
+                let deregisterError      = 'Some consul error';
                 let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
                 let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
                 let registerReturn       = Promise.resolve();
@@ -260,9 +260,10 @@ describe('ServiceRegistrator', function () {
                     .catch((err) => {
                         assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
                         assert.equal(consulRegisterStub.callCount, 0);
-                        assert.isTrue(service._active);
+                        assert.isFalse(service._active);
                         assert.match(err.message, new RegExp(
-                            '^Can not deregister service `\\w+`, failed with error: `Some consul error`$'
+                            '^Failed to deregister service `\\w+` in overwrite mode due to error: ' +
+                            '`Some consul error`$'
                         ));
                     });
             });
@@ -403,7 +404,7 @@ describe('ServiceRegistrator', function () {
                     service.register()
                         .catch(err => {
                             assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                            assert.isTrue(service._active);
+                            assert.isFalse(service._active);
 
                             // eslint-disable-next-line max-len
                             assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
