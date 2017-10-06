@@ -1,4 +1,10 @@
 # Changelog
+### 1.4.0
+
+- Change constructor parameters from `constructor(options, serviceName, serviceId)` to `constructor(options)`
+- Add new method `setup(serviceName[, serviceId])`
+- Change type of custom exceptions from `Error` to `DetailedError`
+
 ### 1.3.0
 
 - Using `net.isIPv4` for validate IPv4 addresses

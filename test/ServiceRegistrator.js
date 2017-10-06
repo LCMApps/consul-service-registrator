@@ -8,13 +8,14 @@ const async_             = require('asyncawait/async');
 const await_             = require('asyncawait/await');
 const randomstring       = require('randomstring');
 const ServiceRegistrator = require('../lib/ServiceRegistrator');
+const DetailedError      = require('../lib/DetailedError');
 
 const errorMessages = {
-    MUST_BE_OBJECT:      'options must be an object',
-    MUST_BE_CONSUL:      'options must have host and port fields',
+    MUST_BE_OBJECT:      'options argument must be an object',
+    MUST_BE_CONSUL:      'options argument must have host and port fields',
     MUST_BE_PROMISIFIED: 'consul must be created with promisify option',
-    ADDRESS_TYPE:        'address must be a string',
-    ADDRESS_NOT_IPV4:    'address must be an IPv4 IP address',
+    ADDRESS_TYPE:        'address argument must be a string',
+    ADDRESS_NOT_IPV4:    'address argument must be an IPv4 address',
 };
 
 const CONSUL_OPTIONS = {
@@ -47,7 +48,7 @@ describe('ServiceRegistrator', function () {
         it('argument must be passed', function () {
             assert.throws(() => {
                 new ServiceRegistrator();
-            }, Error);
+            }, DetailedError);
         });
 
         let incorrectArguments = [42, true, 'string', null, undefined, Symbol(), () => {
@@ -57,7 +58,7 @@ describe('ServiceRegistrator', function () {
             it('argument must be an object', () => {
                 assert.throws(() => {
                     new ServiceRegistrator(arg, 'name', 'name_127.0.0.1_80');
-                }, Error, errorMessages.MUST_BE_OBJECT);
+                }, DetailedError, errorMessages.MUST_BE_OBJECT);
             });
         });
 
@@ -66,45 +67,52 @@ describe('ServiceRegistrator', function () {
             let consulOptions = {};
             assert.throws(() => {
                 new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
-            }, Error, errorMessages.MUST_BE_CONSUL);
+            }, DetailedError, errorMessages.MUST_BE_CONSUL);
         });
 
         it('argument is a Consul object with incorect type of host (string) option', () => {
             let consulOptions = {host: {}};
             assert.throws(() => {
                 new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
-            }, Error, errorMessages.MUST_BE_CONSUL);
+            }, DetailedError, errorMessages.MUST_BE_CONSUL);
         });
 
         it('argument is a Consul object with incorect type of port (int) option', () => {
             let consulOptions = {port: {}};
             assert.throws(() => {
                 new ServiceRegistrator(consulOptions, 'name', 'name_127.0.0.1_80');
-            }, Error, errorMessages.MUST_BE_CONSUL);
+            }, DetailedError, errorMessages.MUST_BE_CONSUL);
         });
 
     });
 
     describe('#setters', function () {
-        it('check serviceName', () => {
+        it('check serviceName and serviceId', () => {
             let serviceName = randomstring.generate();
+            let serviceId   = randomstring.generate();
             let service;
 
             assert.doesNotThrow(() => {
-                service = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, 'name_127.0.0.1_80');
+                service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                service.setup(serviceName, serviceId);
             });
+
             assert.equal(service.getServiceName(), serviceName);
+            assert.equal(service.getServiceId(), serviceId);
         });
 
-        it('check serviceId', () => {
+        it('check serviceId if ServiceRegistrator::setup called only with serviceName argument', () => {
             let serviceName = randomstring.generate();
-            let serviceId   = serviceName + '_127.0.0.1_80';
             let service;
 
             assert.doesNotThrow(() => {
-                service = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, serviceId);
+                service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                service.setup(serviceName);
             });
-            assert.equal(service.getServiceId(), serviceId);
+            assert.equal(service.getServiceName(), serviceName);
+            assert.equal(service.getServiceId(), serviceName);
         });
 
         describe('setAddress with invalid type', function () {
@@ -119,7 +127,7 @@ describe('ServiceRegistrator', function () {
 
             incorrectArguments.forEach((arg) => {
                 it('setAddress with invalid type', () => {
-                    assert.throws(testSetAddressFn(arg), Error, errorMessages.ADDRESS_TYPE);
+                    assert.throws(testSetAddressFn(arg), DetailedError, errorMessages.ADDRESS_TYPE);
                 });
             });
         });
@@ -136,7 +144,7 @@ describe('ServiceRegistrator', function () {
 
             incorrectArguments.forEach((arg) => {
                 it('setAddress with invalid type', () => {
-                    assert.throws(testSetAddressFn(arg), Error, errorMessages.ADDRESS_NOT_IPV4);
+                    assert.throws(testSetAddressFn(arg), DetailedError, errorMessages.ADDRESS_NOT_IPV4);
                 });
             });
         });
@@ -214,6 +222,9 @@ describe('ServiceRegistrator', function () {
                                 consulRegisterStub.printf('incorrect argument, calls: %C')
                             );
                             assert.equal(service.getServiceId(), arg.id);
+                        })
+                        .catch(err => {
+                            assert.ifError(err);
                         });
                 });
 
@@ -238,11 +249,14 @@ describe('ServiceRegistrator', function () {
                         assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
                         assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
                         assert.isTrue(service._active);
+                    })
+                    .catch(err => {
+                        assert.ifError(err);
                     });
 
             });
 
-            it('register with overwrite, that fail', function () {
+            it('register with overwrite, that fail', function (done) {
                 let consul      = getFakeConsulObject(true);
                 let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name123');
                 service._consul = consul;
@@ -262,9 +276,10 @@ describe('ServiceRegistrator', function () {
                         assert.equal(consulRegisterStub.callCount, 0);
                         assert.isFalse(service._active);
                         assert.match(err.message, new RegExp(
-                            '^Failed to deregister service `\\w+` in overwrite mode due to error: ' +
-                            '`Some consul error`$'
+                            '^Failed to deregister service in overwrite mode due to error: `Some consul error`$'
                         ));
+
+                        done();
                     });
             });
         });
@@ -293,8 +308,11 @@ describe('ServiceRegistrator', function () {
             }
 
             it('error on register without checks, from consul', function (done) {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                let consul  = getFakeConsulObject(true);
+                let service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                service.setup('name', 'name_someId');
+
                 service._consul = consul;
 
                 // eslint-disable-next-line no-unused-vars
@@ -322,8 +340,11 @@ describe('ServiceRegistrator', function () {
 
             it('register without checks, and then add some checks', function (done) {
                 async_(() => {
-                    let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                    let consul  = getFakeConsulObject(true);
+                    let service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                    service.setup('name', 'name_someId');
+
                     service._consul = consul;
 
                     let regPromise         = Promise.resolve();
@@ -367,8 +388,11 @@ describe('ServiceRegistrator', function () {
 
             it('register with checks, that fails', function (done) {
                 async_(() => {
-                    let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                    let consul  = getFakeConsulObject(true);
+                    let service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                    service.setup('name', 'name_someId');
+
                     service._consul = consul;
 
                     let regPromise         = Promise.resolve();
@@ -407,7 +431,7 @@ describe('ServiceRegistrator', function () {
                             assert.isFalse(service._active);
 
                             // eslint-disable-next-line max-len
-                            assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
+                            assert.match(err.message, /^Can not register one of checks, failed with error: Error: check reg error$/);
                             assert.equal(deregisterStub.callCount, 1, 'must be called once');
                             assert.isTrue(deregisterStub.firstCall.calledWith());
                         });
@@ -416,8 +440,11 @@ describe('ServiceRegistrator', function () {
 
             it('register with checks, that fails and deregister that fails', function (done) {
                 async_(() => {
-                    let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                    let consul  = getFakeConsulObject(true);
+                    let service = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                    service.setup('name', 'name_someId');
+
                     service._consul = consul;
 
                     let checkRegArgs = {
@@ -454,7 +481,7 @@ describe('ServiceRegistrator', function () {
                             assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
                             assert.isFalse(service._active);
                             assert.match(err.message, new RegExp(
-                                '^Can not register one of checks for the service `\\w+`, failed with error: ' +
+                                '^Can not register one of checks, failed with error: ' +
                                 'Error: check reg error and failed to deregister just started service due to ' +
                                 'error: `deregister fail`$'
                             ));
@@ -468,7 +495,10 @@ describe('ServiceRegistrator', function () {
             it('overwrite registration with checks, that fails', function (done) {
                 async_(() => {
                     let consul      = getFakeConsulObject(true);
-                    let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                    let service     = new ServiceRegistrator(CONSUL_OPTIONS);
+
+                    service.setup('name', 'name_someId');
+
                     service._consul = consul;
 
                     let regPromise           = Promise.resolve();
@@ -508,7 +538,7 @@ describe('ServiceRegistrator', function () {
                             assert.isFalse(service._active);
 
                             // eslint-disable-next-line max-len
-                            assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
+                            assert.match(err.message, /^Can not register one of checks, failed with error: Error: check reg error$/);
                             assert.equal(consulDeregisterStub.callCount, 2, 'must be called twice');
                         });
                 })().then(done).catch(done);
