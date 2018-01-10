@@ -1,4 +1,7 @@
 # Changelog
+### 2.1.0
+- Add status parameter to `ServiceRegistrator.addHttpCheck`
+
 ### 2.0.0
 
 - Now `ServiceRegistrator#addHttpCheck` do not creates check's id implicitly (based on prop `_serviceId` and argument 
