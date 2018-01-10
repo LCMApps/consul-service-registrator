@@ -513,5 +513,55 @@ describe('ServiceRegistrator', function () {
                     });
             });
         });
+
+        describe('addHttpCheck with status', () => {
+            it('should creates check object without status prop if it not passed as argument', () => {
+                const service   = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                const checkArgs = {
+                    id:       'id',
+                    name:     'check',
+                    url:      'checkUrl',
+                    interval: 'interval',
+                };
+
+                const checkObject = {
+                    id:        checkArgs.id,
+                    serviceid: service.getServiceId(),
+                    name:      checkArgs.name,
+                    http:      checkArgs.url,
+                    interval:  checkArgs.interval
+                };
+
+                service.addHttpCheck(checkArgs.id, checkArgs.name, checkArgs.url, checkArgs.interval);
+
+                assert.deepEqual(service._checks[0], checkObject);
+            });
+
+            it('should creates check object with status prop if it passed as argument', () => {
+                const service   = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
+                const checkArgs = {
+                    id:       'id',
+                    name:     'check',
+                    url:      'checkUrl',
+                    interval: 'interval',
+                    status:   'status'
+                };
+
+                const checkObject = {
+                    id:        checkArgs.id,
+                    serviceid: service.getServiceId(),
+                    name:      checkArgs.name,
+                    http:      checkArgs.url,
+                    interval:  checkArgs.interval,
+                    status:    checkArgs.status
+                };
+
+                service.addHttpCheck(
+                    checkArgs.id, checkArgs.name, checkArgs.url, checkArgs.interval, null, checkArgs.status
+                );
+
+                assert.deepEqual(service._checks[0], checkObject);
+            });
+        });
     });
 });
