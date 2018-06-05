@@ -1,4 +1,9 @@
 # Changelog
+### 2.0.0
+
+- Now `ServiceRegistrator#addHttpCheck` do not creates check's id implicitly (based on prop `_serviceId` and argument 
+`id`) and use only `id` argument for it.
+
 ### 1.3.0
 
 - Using `net.isIPv4` for validate IPv4 addresses
