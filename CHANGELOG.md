@@ -1,4 +1,8 @@
 # Changelog
+
+### 2.2.0
+- Update class IpAddressDetector according to changes in Consul 1.0.0
+
 ### 2.1.0
 - Add status parameter to `ServiceRegistrator.addHttpCheck`
 
