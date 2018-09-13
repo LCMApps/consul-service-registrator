@@ -5,7 +5,7 @@
 const assert             = require('chai').assert;
 const sinon              = require('sinon');
 const randomstring       = require('randomstring');
-const ServiceRegistrator = require('../lib/ServiceRegistrator');
+const ServiceRegistrator = require('src/ServiceRegistrator');
 
 const errorMessages = {
     MUST_BE_OBJECT:      'options must be an object',

@@ -1,5 +1,5 @@
 'use strict';
 
-exports.Registrator       = require('./lib/ServiceRegistrator');
-exports.IpAddressDetector = require('./lib/IpAddressDetector');
-exports.ServiceObserver   = require('./lib/ServiceObserver');
+exports.Registrator       = require('./src/ServiceRegistrator');
+exports.IpAddressDetector = require('./src/IpAddressDetector');
+exports.ServiceObserver   = require('./src/ServiceObserver');
