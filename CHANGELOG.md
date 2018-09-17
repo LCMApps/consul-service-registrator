@@ -1,10 +1,16 @@
 # Changelog
 
+### 2.2.1
+
+- Update module "consul" to version 0.34.0
+
 ### 2.2.0
+
 - Backward compatibility for Consul versions 0.* and 1.*
 - Update class IpAddressDetector according to changes in Consul 1.0.0
 
 ### 2.1.0
+
 - Add status parameter to `ServiceRegistrator.addHttpCheck`
 
 ### 2.0.0
