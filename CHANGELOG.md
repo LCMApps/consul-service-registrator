@@ -1,9 +1,5 @@
 # Changelog
 
-### 2.2.1
-
-- Update module "consul" to version 0.34.0
-
 ### 2.2.0
 
 - Backward compatibility for Consul versions 0.* and 1.*
