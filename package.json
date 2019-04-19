@@ -35,7 +35,7 @@
     "coveralls": "^3.0.2",
     "eslint": "^4.2.0",
     "istanbul": "^0.4.5",
-    "mocha": "^5.2.0",
+    "mocha": "^6.1.4",
     "randomstring": "^1.1.5",
     "sinon": "^1.17.4"
   },
