@@ -32,12 +32,12 @@
   "devDependencies": {
     "app-module-path": "^2.2.0",
     "chai": "^4.2.0",
-    "coveralls": "^3.0.2",
+    "coveralls": "^3.0.6",
     "eslint": "^4.2.0",
     "istanbul": "^0.4.5",
     "mocha": "^6.2.1",
     "randomstring": "^1.1.5",
-    "sinon": "^1.17.4"
+    "sinon": "^7.5.0"
   },
   "bugs": {
     "url": "https://github.com/LCMApps/consul-service-registrator/issues"
