@@ -1,8 +1,13 @@
 # Changelog
 
+### 2.2.2
+
+- Bump "consul" from 0.34.0 to 0.36.0
+- Bump other dependencies
+ 
 ### 2.2.1
 
- - Update module "consul" to version 0.34.0 (support of consul 1.0)
+- Update module "consul" to version 0.34.0 (support of consul 1.0)
 
 ### 2.2.0
 
