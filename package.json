@@ -1,6 +1,6 @@
 {
   "name": "consul-service-registrator",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Set of classes for service registration in Consul",
   "main": "index.js",
   "scripts": {
