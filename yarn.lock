@@ -265,9 +265,9 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
 
-consul@^0.34.0:
-  version "0.34.0"
-  resolved "https://registry.yarnpkg.com/consul/-/consul-0.34.0.tgz#06b8727d2d57a20e81d6e3ad7056c9edc95a4d4f"
+consul@^0.36.0:
+  version "0.36.0"
+  resolved "https://registry.yarnpkg.com/consul/-/consul-0.36.0.tgz#d1eff5aafe94eec36a05efb15618c8d39ef1e405"
   dependencies:
     papi "^0.29.0"
 
