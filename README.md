@@ -1,6 +1,7 @@
 # Consul Service Registrator
 
 [![NPM version](https://img.shields.io/npm/v/consul-service-registrator.svg)](https://www.npmjs.com/package/consul-service-registrator)
+[![Release Status](https://github.com/LCMApps/consul-service-registrator/workflows/NPM%20Release/badge.svg)](https://github.com/LCMApps/consul-service-registrator/releases)
 [![Build Status](https://travis-ci.org/LCMApps/consul-service-registrator.svg?branch=master)](https://travis-ci.org/LCMApps/consul-service-registrator)
 [![Coverage Status](https://coveralls.io/repos/github/LCMApps/consul-service-registrator/badge.svg?branch=master)](https://coveralls.io/github/LCMApps/consul-service-registrator?branch=master)
 
