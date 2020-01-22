@@ -36,7 +36,7 @@ jobs:
           node-version: 12
       - run: yarn install --frozen-lock-file
       - run: yarn lint
-      - run: yarn test
+      - run: yarn tests
 
   publish-npm:
     name: Publish to NPM
