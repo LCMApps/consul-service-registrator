@@ -51,4 +51,4 @@ jobs:
       - run: yarn install --frozen-lock-file
       - run: yarn publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_AUTH}}
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
