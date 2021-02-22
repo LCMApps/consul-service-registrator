@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "consul": "^0.36.0",
-    "lodash": "^4.17.13"
+    "lodash": "^4.17.21"
   },
   "devDependencies": {
     "app-module-path": "^2.2.0",
