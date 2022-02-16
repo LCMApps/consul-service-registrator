@@ -218,7 +218,11 @@ describe('ServiceRegistrator', function () {
                 callNo++;
             });
 
-            it('register with overwrite', function () {
+            /**
+             * When ServiceRegistrator tries to deregister the service it calls consul.agent.service.deregister
+             * and this call resolves promise if service with that name was already registered.
+             */
+            it('register with overwrite, service was already registered', function () {
                 let consul      = getFakeConsulObject(true);
                 let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name.' + pid);
                 service._consul = consul;
@@ -240,12 +244,18 @@ describe('ServiceRegistrator', function () {
 
             });
 
-            it('register with overwrite, that fail', function () {
-                let consul      = getFakeConsulObject(true);
-                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name123');
-                service._consul = consul;
+            /**
+             * When ServiceRegistrator tries to deregister the service it calls consul.agent.service.deregister
+             * and this call rejects promise if service with that name wasn't registered yet.
+             */
+            it('register with overwrite, service was not registered', async function () {
+                let consul        = getFakeConsulObject(true);
+                const serviceName = 'serviceName';
+                const serviceId   = serviceName + '.' + pid;
+                let service       = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, serviceId);
+                service._consul   = consul;
 
-                let deregisterError      = 'Some consul error';
+                let deregisterError      = new Error('Unknown service "' + serviceId + '"');
                 let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
                 let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
                 let registerReturn       = Promise.resolve();
@@ -254,7 +264,32 @@ describe('ServiceRegistrator', function () {
                 consulRegisterStub.returns(registerReturn);
                 consulDeregisterStub.returns(deregisterReturn);
 
-                service.register(true)
+                return service.register(true)
+                    .then(() => {
+                        assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
+                        assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                        assert.isTrue(service._active);
+                    });
+            });
+
+            it('register with overwrite, that fail', async function () {
+                let consul      = getFakeConsulObject(true);
+                let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name123');
+                service._consul = consul;
+
+                let deregisterError      = new Error('Some consul error');
+                let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
+                let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
+                let registerReturn       = Promise.resolve();
+                let deregisterReturn     = Promise.reject(deregisterError);
+
+                consulRegisterStub.returns(registerReturn);
+                consulDeregisterStub.returns(deregisterReturn);
+
+                return service.register(true)
+                    .then(() => {
+                        assert.fail("Registration must fail if consul return unknown error");
+                    })
                     .catch((err) => {
                         assert.equal(consulDeregisterStub.callCount, 1, 'must be called once');
                         assert.equal(consulRegisterStub.callCount, 0);
@@ -290,7 +325,7 @@ describe('ServiceRegistrator', function () {
                 return data;
             }
 
-            it('error on register without checks, from consul', function (done) {
+            it('error on register without checks, from consul', async function () {
                 let consul      = getFakeConsulObject(true);
                 let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_someId');
                 service._consul = consul;
@@ -305,17 +340,22 @@ describe('ServiceRegistrator', function () {
 
                 let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
                 consulRegisterStub.returns(regPromise);
-                let regResult = service.register();
 
                 let regError = new Error('regerr');
 
-                regResult.catch(err => {
+                // noinspection JSUnusedAssignment
+                rejectRegPromise(regError);
+
+                try {
+                    await service.register();
+                } catch (err) {
                     assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
                     assert.strictEqual(err, regError);
-                    done();
-                });
 
-                rejectRegPromise(regError);
+                    return;
+                }
+
+                assert.fail('Unexpected test behaviour. Registration must fail according to stubs.');
             });
 
             it('register without checks, and then add some checks', async function () {
@@ -396,19 +436,21 @@ describe('ServiceRegistrator', function () {
 
                 firstCheckRegData.reject(new Error('check reg error'));
 
-                service.register()
-                    .then(() => {
-                        assert.isFalse(true, 'Unexpected test behaviour');
-                    })
-                    .catch(err => {
-                        assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                        assert.isFalse(service._active);
+                try {
+                    await service.register();
+                } catch (err) {
+                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                    assert.isFalse(service._active);
 
-                        // eslint-disable-next-line max-len
-                        assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
-                        assert.equal(deregisterStub.callCount, 1, 'must be called once');
-                        assert.isTrue(deregisterStub.firstCall.calledWith());
-                    });
+                    // eslint-disable-next-line max-len
+                    assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error/);
+                    assert.equal(deregisterStub.callCount, 1, 'must be called once');
+                    assert.isTrue(deregisterStub.firstCall.calledWith());
+
+                    return;
+                }
+
+                assert.fail('Unexpected test behaviour. Registration must fail according to stubs.');
             });
 
             it('register with checks, that fails and deregister that fails', async function () {
@@ -425,7 +467,7 @@ describe('ServiceRegistrator', function () {
                 };
 
                 let checkError         = new Error('check reg error');
-                let deregisterMsg      = 'deregister fail';
+                let deregisterErr      = new Error('deregister fail');
                 let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
 
                 let consulCheckRegisterStub = sinon.stub(consul.agent.check, 'register');
@@ -433,7 +475,7 @@ describe('ServiceRegistrator', function () {
 
                 consulRegisterStub.returns(Promise.resolve());
                 consulCheckRegisterStub.returns(Promise.reject(checkError));
-                deregisterStub.returns(Promise.reject(deregisterMsg));
+                deregisterStub.returns(Promise.reject(deregisterErr));
 
                 assert.isNull(service._checks);
                 assert.isFalse(service._active);
@@ -445,22 +487,24 @@ describe('ServiceRegistrator', function () {
                 assert.strictEqual(JSON.stringify(service._checks[0]), JSON.stringify(checkRegArgs));
                 assert.isFalse(service._active);
 
-                service.register()
-                    .then(() => {
-                        assert.isFalse(true, 'Unexpected test behaviour');
-                    })
-                    .catch(err => {
-                        assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                        assert.isFalse(service._active);
-                        assert.match(err.message, new RegExp(
-                            '^Can not register one of checks for the service `\\w+`, failed with error: ' +
-                                'Error: check reg error and failed to deregister just started service due to ' +
-                                'error: `deregister fail`$'
-                        ));
-                        assert.equal(consulCheckRegisterStub.callCount, 1, 'must be called once');
-                        assert.equal(deregisterStub.callCount, 1, 'must be called once');
-                        assert.isTrue(deregisterStub.firstCall.calledWith());
-                    });
+                try {
+                    await service.register();
+                } catch (err) {
+                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                    assert.isFalse(service._active);
+                    assert.match(err.message, new RegExp(
+                        '^Can not register one of checks for the service `\\w+`, failed with error: ' +
+                        'check reg error and failed to deregister just started service due to ' +
+                        'error: `deregister fail`'
+                    ));
+                    assert.equal(consulCheckRegisterStub.callCount, 1, 'must be called once');
+                    assert.equal(deregisterStub.callCount, 1, 'must be called once');
+                    assert.isTrue(deregisterStub.firstCall.calledWith());
+
+                    return;
+                }
+
+                assert.fail('Unexpected test behaviour. Registration must fail according to stubs.');
             });
 
             it('overwrite registration with checks, that fails', async function () {
@@ -499,18 +543,20 @@ describe('ServiceRegistrator', function () {
 
                 firstCheckRegData.reject(new Error('check reg error'));
 
-                service.register(true)
-                    .then(() => {
-                        assert.isFalse(true, 'Unexpected test behaviour');
-                    })
-                    .catch(err => {
-                        assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                        assert.isFalse(service._active);
+                try {
+                    await service.register(true);
+                } catch (err) {
+                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                    assert.isFalse(service._active);
 
-                        // eslint-disable-next-line max-len
-                        assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error$/);
-                        assert.equal(consulDeregisterStub.callCount, 2, 'must be called twice');
-                    });
+                    // eslint-disable-next-line max-len
+                    assert.match(err.message, /^Can not register one of checks for the service `\w+`, failed with error: Error: check reg error/);
+                    assert.equal(consulDeregisterStub.callCount, 2, 'must be called twice');
+
+                    return;
+                }
+
+                assert.fail('Unexpected test behaviour. Registration must fail according to stubs.');
             });
         });
 

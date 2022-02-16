@@ -103,7 +103,7 @@ class ServiceRegistrator {
         });
     }
 
-    register(overwrite = false) {
+    async register(overwrite = false) {
         if (!_.isBoolean(overwrite)) {
             return Promise.reject(new Error('overwrite must be a boolean'));
         }
@@ -127,40 +127,41 @@ class ServiceRegistrator {
         }
 
         if (_.isArray(this._checks) && !_.isEmpty(this._checks)) {
-            return this._deregisterOnDemand(overwrite)
-                .then(() => {
-                    return this._consul.agent.service.register(options)
-                        .then(() => {
-                            let checkRegisterPromises = this._checks.map(check => {
-                                return this._consul.agent.check.register(check);
-                            });
-                            return Promise.all(checkRegisterPromises);
-                        })
-                        .then(() => this._active = true)
-                        .catch(err => {
-                            return this.deregister()
-                                .catch(deregisterErr => {
-                                    throw new Error(util.format(
-                                        'Can not register one of checks for the service `%s`, failed with error:' +
-                                        ' %s and failed to deregister just started service due to error: `%s`',
-                                        this._serviceId,
-                                        err,
-                                        deregisterErr
-                                    ));
-                                })
-                                .then(() => {
-                                    throw new Error(util.format(
-                                        'Can not register one of checks for the service `%s`, failed with error: %s',
-                                        this._serviceId,
-                                        err
-                                    ));
-                                });
-                        });
+            await this._deregisterOnDemand(overwrite);
+
+            try {
+                await this._consul.agent.service.register(options);
+
+                let checkRegisterPromises = this._checks.map(check => {
+                    return this._consul.agent.check.register(check);
                 });
+
+                await Promise.all(checkRegisterPromises);
+
+                this._active = true;
+            } catch (err) {
+                try {
+                    await this.deregister();
+                } catch (deregisterErr) {
+                    throw new Error(util.format(
+                        'Can not register one of checks for the service `%s`, failed with error:' +
+                        ' %s and failed to deregister just started service due to error: `%s`',
+                        this._serviceId,
+                        err.message,
+                        deregisterErr.message
+                    ));
+                }
+
+                throw new Error(util.format(
+                    'Can not register one of checks for the service `%s`, failed with error: %s',
+                    this._serviceId,
+                    err
+                ));
+            }
         } else {
-            return this._deregisterOnDemand(overwrite)
-                .then(() => this._consul.agent.service.register(options))
-                .then(() => this._active = true);
+            await this._deregisterOnDemand(overwrite);
+            await this._consul.agent.service.register(options);
+            this._active = true;
         }
     }
 
@@ -202,25 +203,32 @@ class ServiceRegistrator {
         this._port = port;
     }
 
-    deregister() {
+    async deregister() {
         this._active = false;
-        return this._consul.agent.service.deregister(this._serviceId);
+        try {
+            await this._consul.agent.service.deregister(this._serviceId);
+        } catch (deregisterErr) {
+            if (!this._isUnknownServiceError(deregisterErr)) {
+                // Service wasn't registered
+                throw deregisterErr;
+            }
+        }
     }
 
-    _deregisterOnDemand(deregister) {
-        return Promise.resolve()
-            .then(() => {
-                if (deregister) {
-                    return this.deregister();
-                }
-            })
-            .catch(deregisterErr => {
-                throw new Error(util.format(
-                    'Failed to deregister service `%s` in overwrite mode due to error: `%s`',
-                    this._serviceId,
-                    deregisterErr
-                ));
-            });
+    async _deregisterOnDemand(deregister) {
+        if (!deregister) {
+            return
+        }
+
+        try {
+            await this.deregister();
+        } catch (deregisterErr) {
+            throw new Error(util.format(
+                'Failed to deregister service `%s` in overwrite mode due to error: `%s`',
+                this._serviceId,
+                deregisterErr.message
+            ));
+        }
     }
 
     _validateMaintenanceData(reason) {
@@ -235,6 +243,12 @@ class ServiceRegistrator {
                 util.format('Reason must be a string, but received %s', typeof reason)
             );
         }
+    }
+
+    _isUnknownServiceError(err) {
+        return err.message &&
+            _.isString(err.message) &&
+            err.message.includes('Unknown service "' + this._serviceId + '"');
     }
 }
 

@@ -1,8 +1,14 @@
 # Changelog
 
+### 2.3.0
+
+- Fix of bug with deregistration of service that wasn't registered
+- Code and test refactoring
+- "consul" module was updated to 0.40.0
+
 ### 2.2.1
 
- - Update module "consul" to version 0.34.0 (support of consul 1.0)
+- Update module "consul" to version 0.34.0 (support of consul 1.0)
 
 ### 2.2.0
 
