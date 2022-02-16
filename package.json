@@ -4,7 +4,7 @@
   "description": "Set of classes for service registration in Consul",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint ./lib/",
+    "lint": "eslint ./src/",
     "tests": "yarn run unit-tests",
     "test:coverage": "NODE_ENV=test istanbul cover ./node_modules/.bin/_mocha  --print both -- --opts tests/mocha.opts -R spec ./tests/Unit",
     "unit-tests": "NODE_ENV=test mocha --opts tests/mocha.opts -R spec './tests/Unit/**/*.js'",
@@ -32,10 +32,10 @@
   "devDependencies": {
     "app-module-path": "^2.2.0",
     "chai": "^4.2.0",
-    "coveralls": "^3.0.2",
-    "eslint": "^4.2.0",
+    "coveralls": "^3.0.6",
+    "eslint": "^6.5.1",
     "istanbul": "^0.4.5",
-    "mocha": "^5.2.0",
+    "mocha": "^6.2.1",
     "randomstring": "^1.1.5",
     "sinon": "13.0.1"
   },
