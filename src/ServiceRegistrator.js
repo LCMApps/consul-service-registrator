@@ -217,7 +217,7 @@ class ServiceRegistrator {
 
     async _deregisterOnDemand(deregister) {
         if (!deregister) {
-            return
+            return;
         }
 
         try {
@@ -248,7 +248,12 @@ class ServiceRegistrator {
     _isUnknownServiceError(err) {
         return err.message &&
             _.isString(err.message) &&
-            err.message.includes('Unknown service "' + this._serviceId + '"');
+            err.message === 'not found' &&
+            err.response &&
+            _.isObject(err.response) &&
+            err.response.body &&
+            _.isString(err.response.body) &&
+            (err.response.body.includes('Unknown service') && err.response.body.includes(`"${this._serviceId}"`));
     }
 }
 

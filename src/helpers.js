@@ -1,7 +1,7 @@
 'use strict';
 
 const _      = require('lodash');
-const consul = require('consul');
+const Consul = require('consul');
 
 function checkOptionsAndCreateConsulObject(options) {
     if (!_.isObject(options) || _.isFunction(options)) {
@@ -23,7 +23,6 @@ function checkOptionsAndCreateConsulObject(options) {
     let consulOptions = {
         host:      options.host,
         port:      options.port,
-        promisify: true,
     };
 
     if (!_.has(options, 'secure')) {
@@ -36,7 +35,7 @@ function checkOptionsAndCreateConsulObject(options) {
         consulOptions.secure = options.secure;
     }
 
-    return consul(consulOptions);
+    return new Consul(consulOptions);
 }
 
 module.exports.checkOptionsAndCreateConsulObject = checkOptionsAndCreateConsulObject;
