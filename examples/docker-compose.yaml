@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  consul:
+    image: consul:1.15.2
+    hostname: consul
+    restart: unless-stopped
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+    ports:
+      - "8500:8500/tcp"
+      - "8300:8300/tcp"
+      - "8301:8301/tcp"
+      - "8302:8302/tcp"
+      - "8301:8301/udp"
+      - "8302:8302/udp"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
