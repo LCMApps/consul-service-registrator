@@ -1,5 +1,11 @@
 # Changelog
 
+### 2.4.0
+
+- Fix of bug with deregistration of service that wasn't registered (for consul 1.12.x+)
+- Examples for testing different versions (including docker-compose with consul)
+- "consul" module was updated to 1.2.0, some outdated code fragments was refactored.
+
 ### 2.3.0
 
 - Fix of bug with deregistration of service that wasn't registered
