@@ -255,7 +255,12 @@ describe('ServiceRegistrator', function () {
                 let service       = new ServiceRegistrator(CONSUL_OPTIONS, serviceName, serviceId);
                 service._consul   = consul;
 
-                let deregisterError      = new Error('Unknown service "' + serviceId + '"');
+                const deregisteredErrorResponseBody = 'Unknown service ID "' + serviceId +
+                    '". Ensure that the service ID is passed, not the service name.';
+                let deregisterError      = new Error('not found');
+                deregisterError.response = {
+                    body: deregisteredErrorResponseBody,
+                };
                 let consulRegisterStub   = sinon.stub(consul.agent.service, 'register');
                 let consulDeregisterStub = sinon.stub(consul.agent.service, 'deregister');
                 let registerReturn       = Promise.resolve();
