@@ -246,7 +246,11 @@ class ServiceRegistrator {
     }
 
     _isUnknownServiceError(err) {
-        return err.message &&
+        const unknownFormatBeforeConsul112 = err.message &&
+            _.isString(err.message) &&
+            err.message.includes('Unknown service "' + this._serviceId + '"');
+
+        const unknownFormatFromConsul112 = err.message &&
             _.isString(err.message) &&
             err.message === 'not found' &&
             err.response &&
@@ -254,6 +258,8 @@ class ServiceRegistrator {
             err.response.body &&
             _.isString(err.response.body) &&
             (err.response.body.includes('Unknown service') && err.response.body.includes(`"${this._serviceId}"`));
+
+        return unknownFormatBeforeConsul112 || unknownFormatFromConsul112;
     }
 }
 

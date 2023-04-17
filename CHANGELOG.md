@@ -1,5 +1,9 @@
 # Changelog
 
+### 2.4.1
+
+- Bugfix of the logic of 2.4.0
+
 ### 2.4.0
 
 - Fix of bug with deregistration of service that wasn't registered (for consul 1.12.x+)
