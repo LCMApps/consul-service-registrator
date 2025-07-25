@@ -1,5 +1,10 @@
 # Changelog
 
+### 2.5.0
+
+- More docs
+- Upgrade to consul package 2.0.1
+
 ### 2.4.1
 
 - Bugfix of the logic of 2.4.0

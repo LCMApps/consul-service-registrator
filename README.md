@@ -22,3 +22,48 @@ Using yarn:
 ```shell
 $ yarn add consul-service-registrator
 ```
+
+## Usage
+
+Lib provides 3 classes:
+- `IpAddressDetector`
+- `ServiceObserver`
+- `Registrator`
+
+### IpAddressDetector
+
+Class has a method `getLanAndWanFromConsul` that return Promise.
+
+Method fetches from consul a response of `/v1/agent/self` and
+* if both `Config.AdvertiseAddr` and `Config.AdvertiseAddrWan` are present
+returns them back as `result.lanIp` and `result.wanIp` correspondingly;
+* if both `DebugConfig.AdvertiseAddrLAN` and `DebugConfig.AdvertiseAddrWAN` are present
+  returns them back as `result.lanIp` and `result.wanIp` correspondingly.
+
+> Note. `Config` shows the explicitly defined configuration. `DebugConfig` shows how Consul interpreted and applied
+> the configuration in practice. TaggedAddresses show explicitly set values that are delivered through gossip
+
+```js
+const {IpAddressDetector} = require('consul-service-registrator');
+
+const consulConfig = {
+    host: '127.0.0.1',
+    port: 8500
+};
+const ipAddressDetector = new IpAddressDetector(consulConfig);
+
+ipAddressDetector.getLanAndWanFromConsul().then(result => {
+    console.log(result);
+}).catch(err => {
+    console.log(err);
+})
+```
+
+> Check the `example` folder and you may find use cases.
+
+### Registrator
+
+
+
+## Development
+
