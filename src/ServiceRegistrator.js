@@ -5,7 +5,18 @@ const net     = require('net');
 const _       = require('lodash');
 const helpers = require('./helpers');
 
+const TAGGED_ADDRESS_TYPE_LAN_NAME = 'lan';
+const TAGGED_ADDRESS_TYPE_WAN_NAME = 'wan';
+
 class ServiceRegistrator {
+
+    static TAGGED_ADDRESS_TYPE_LAN = Symbol('TAGGED_ADDRESS_TYPE_LAN');
+    static TAGGED_ADDRESS_TYPE_WAN = Symbol('TAGGED_ADDRESS_TYPE_WAN');
+
+    get CLASS_NAME() {
+        return this.constructor.name;
+    }
+
     constructor(options, serviceName, serviceId) {
         if (!_.isString(serviceName) || _.isEmpty(serviceName)) {
             throw new Error('serviceName must be a string');
@@ -21,6 +32,7 @@ class ServiceRegistrator {
         this._serviceId   = serviceId;
         this._address     = null;
         this._port        = null;
+        this._taggedAddresses = null;
         this._tags        = null;
         this._checks      = null;
     }
@@ -122,6 +134,10 @@ class ServiceRegistrator {
             options.port = this._port;
         }
 
+        if (this._taggedAddresses !== null) {
+            options.taggedAddresses = this._taggedAddresses;
+        }
+
         if (this._tags !== null) {
             options.tags = this._tags;
         }
@@ -166,12 +182,8 @@ class ServiceRegistrator {
     }
 
     setAddress(address) {
-        if (!_.isString(address)) {
-            throw new Error('address must be a string');
-        }
-
-        if (!net.isIPv4(address)) {
-            throw new Error('address must be an IPv4 IP address');
+        if (!_.isString(address) || _.isEmpty(address)) {
+            throw new Error('address must be a non-empty string');
         }
 
         this._address = address;
@@ -201,6 +213,44 @@ class ServiceRegistrator {
         }
 
         this._port = port;
+    }
+
+    /**
+     *
+     * @param type
+     * @param address
+     * @param port
+     * @return {ServiceRegistrator}
+     */
+    setTaggedAddress(type, address, port) {
+        if (type !== this.constructor.TAGGED_ADDRESS_TYPE_LAN && type !== this.constructor.TAGGED_ADDRESS_TYPE_WAN) {
+            throw new Error(`TaggedAddresses.type must be ${this.CLASS_NAME}.TAGGED_ADDRESS_TYPE_LAN or `+
+                `${this.CLASS_NAME}.TAGGED_ADDRESS_TYPE_WAN`);
+        }
+        if (!_.isString(address) || _.isEmpty(address)) {
+            throw new Error('TaggedAddresses.address must be a non-empty string');
+        }
+
+        if (!_.isInteger(port) || port < 0 || port > 65535) {
+            throw new Error('TaggedAddresses.port must be an integer in a range from 0 to 65535');
+        }
+
+        if (this._taggedAddresses === null) {
+            this._taggedAddresses = {};
+        }
+
+        const obj = {
+            address: address,
+            port: port,
+        };
+
+        if (type === this.constructor.TAGGED_ADDRESS_TYPE_LAN) {
+            this._taggedAddresses[TAGGED_ADDRESS_TYPE_LAN_NAME] = obj;
+        } else if (type === this.constructor.TAGGED_ADDRESS_TYPE_WAN) {
+            this._taggedAddresses[TAGGED_ADDRESS_TYPE_WAN_NAME] = obj;
+        }
+
+        return this;
     }
 
     async deregister() {

@@ -2,8 +2,8 @@ const http = require('http');
 const ConsulServiceRegistrator = require('../src/ServiceRegistrator');
 
 // address and port of the consul daemon started manually or using docker-compose.yaml from the example
-const consulHost = "127.0.0.1";
-const consulPort = 8500;
+const consulHost = process.env.CONSUL_HOST ? parseInt(process.env.CONSUL_HOST, 10) : "127.0.0.1";
+const consulPort = process.env.CONSUL_PORT ? parseInt(process.env.CONSUL_PORT, 10) : 8500;
 
 // if consul runs in docker container, the address should be "host.docker.internal";
 // if consul runs on the same host as this script, use "127.0.0.1"
@@ -70,6 +70,8 @@ async function registerWithoutChecksExample(port, overwrite = false) {
     s.setAddress("127.0.0.1");
     s.setPort(port);
     s.setTags([`node-${serviceName}`, 'example']);
+    s.setTaggedAddress(ConsulServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN, 'int.domain', 11111);
+    s.setTaggedAddress(ConsulServiceRegistrator.TAGGED_ADDRESS_TYPE_WAN, 'ext.domain', 22222);
 
     console.log(`Registration without health checks. Overwrite = ${overwrite}. Registering...`);
     await s.register(overwrite);
@@ -77,7 +79,7 @@ async function registerWithoutChecksExample(port, overwrite = false) {
 
     await waitFor(5000);
     console.log(`Registration without health checks. Overwrite = ${overwrite}. Deregistering...`);
-    await s.deregister();
+    //await s.deregister();
     console.log(`Registration without health checks. Overwrite = ${overwrite}. Deregistered.`);
 }
 
@@ -203,14 +205,14 @@ startServer().then(port => {
     console.log('[EXAMPLE 1]');
     await registerWithoutChecksExample(port, false);
 
-    console.log('[EXAMPLE 2]');
-    await registerWithChecksExample(port, true);
-
-    console.log('[EXAMPLE 3]');
-    await registerWithChecksAfterStartExample(port);
-
-    console.log('[EXAMPLE 4]');
-    await registerWithEmulationOfPresentChecksDuringTheStartExample(port);
+    // console.log('[EXAMPLE 2]');
+    // await registerWithChecksExample(port, true);
+    //
+    // console.log('[EXAMPLE 3]');
+    // await registerWithChecksAfterStartExample(port);
+    //
+    // console.log('[EXAMPLE 4]');
+    // await registerWithEmulationOfPresentChecksDuringTheStartExample(port);
 }).then(async () => {
     await stopServer();
     process.exit(0);
