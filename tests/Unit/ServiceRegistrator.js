@@ -11,8 +11,10 @@ const errorMessages = {
     MUST_BE_OBJECT:      'options must be an object',
     MUST_BE_CONSUL:      'options must have host and port fields',
     MUST_BE_PROMISIFIED: 'consul must be created with promisify option',
-    ADDRESS_TYPE:        'address must be a string',
-    ADDRESS_NOT_IPV4:    'address must be an IPv4 IP address',
+    ADDRESS_TYPE:        'address must be a non-empty string',
+    TAGGED_ADDRESS_TYPE_TYPE_ERROR_MESSAGE_REGEXP: /^TaggedAddresses.type must be ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN or ServiceRegistrator.TAGGED_ADDRESS_TYPE_WAN$/,
+    TAGGED_ADDRESS_TYPE_ADDRESS_ERROR_MESSAGE_REGEXP: /^TaggedAddresses.address must be a non-empty string$/,
+    TAGGED_ADDRESS_TYPE_PORT_ERROR_MESSAGE_REGEXP: /^TaggedAddresses.port must be an integer in a range from 0 to 65535$/
 };
 
 const CONSUL_OPTIONS = {
@@ -106,7 +108,7 @@ describe('ServiceRegistrator', function () {
         });
 
         describe('setAddress with invalid type', function () {
-            let incorrectArguments = [42, true, null, undefined, Symbol(), () => {
+            let incorrectArguments = [42, true, null, undefined, Symbol(), '', () => {
             }, {}];
             let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             let testSetAddressFn   = function testSetAddress(arg) {
@@ -116,25 +118,8 @@ describe('ServiceRegistrator', function () {
             };
 
             incorrectArguments.forEach((arg) => {
-                it('setAddress with invalid type', () => {
+                it(`setAddress with invalid type (${typeof arg})`, () => {
                     assert.throws(testSetAddressFn(arg), Error, errorMessages.ADDRESS_TYPE);
-                });
-            });
-        });
-
-        describe('setAddress with valid type and incorrect IP V4 address', function () {
-            // eslint-disable-next-line max-len
-            let incorrectArguments = ['', '256.0.0.0', '-1.0.0.0', '255.0.256.0', '1.1.1.p2', '0000', 'fe80::5efe:c0a8:33c'];
-            let service            = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
-            let testSetAddressFn   = function testSetAddress(arg) {
-                return () => {
-                    service.setAddress(arg);
-                };
-            };
-
-            incorrectArguments.forEach((arg) => {
-                it('setAddress with invalid type', () => {
-                    assert.throws(testSetAddressFn(arg), Error, errorMessages.ADDRESS_NOT_IPV4);
                 });
             });
         });
@@ -144,6 +129,73 @@ describe('ServiceRegistrator', function () {
             let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
             service._consul = consul;
             service.setAddress('127.0.0.1');
+        });
+
+        describe('setTaggedAddresses with invalid type', function () {
+            let incorrectTypeArguments = [42, true, null, undefined, Symbol(), '', () => {}, {}];
+            let incorrectAddressArguments = [42, true, null, undefined, Symbol(), '', () => {}, {}];
+            let incorrectPortArguments = [-1, 65536, true, null, undefined, Symbol(), '', () => {}, {}];
+
+            const service = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
+            const testSetTaggedAddressTypeFn = function testSetTaggedAddressTypeFn(arg) {
+                return () => {
+                    service.setTaggedAddress(arg, '127.0.0.1', 80);
+                };
+            };
+
+            const testSetTaggedAddressAddressFn = function testSetTaggedAddressAddressFn(arg) {
+                return () => {
+                    service.setTaggedAddress(ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN, arg, 80);
+                };
+            };
+
+            const testSetTaggedAddressPortFn = function testSetTaggedAddressPortFn(arg) {
+                return () => {
+                    service.setTaggedAddress(ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN, '127.0.0.1', arg);
+                };
+            };
+
+            incorrectTypeArguments.forEach((arg) => {
+                it(`incorrect type argument (${typeof arg})`, () => {
+                    assert.throws(testSetTaggedAddressTypeFn(arg), Error, errorMessages.TAGGED_ADDRESS_TYPE_TYPE_ERROR_MESSAGE_REGEXP);
+                });
+            });
+
+            incorrectAddressArguments.forEach((arg) => {
+                it(`incorrect address argument (${typeof arg})`, () => {
+                    assert.throws(testSetTaggedAddressAddressFn(arg), Error, errorMessages.TAGGED_ADDRESS_TYPE_ADDRESS_ERROR_MESSAGE_REGEXP);
+                });
+            });
+
+            incorrectPortArguments.forEach((arg) => {
+                it(`incorrect port argument (${typeof arg})`, () => {
+                    assert.throws(testSetTaggedAddressPortFn(arg), Error, errorMessages.TAGGED_ADDRESS_TYPE_PORT_ERROR_MESSAGE_REGEXP);
+                });
+            });
+        });
+
+        describe('setTaggedAddress with valid arguments', function () {
+            let correctTypeArguments = [
+                {
+                    name: 'ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN',
+                    value: ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN,
+                },
+                {
+                    name: 'ServiceRegistrator.TAGGED_ADDRESS_TYPE_WAN',
+                    value: ServiceRegistrator.TAGGED_ADDRESS_TYPE_WAN,
+                },
+            ];
+
+            const service = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name_127.0.0.1_80');
+            const testSetTaggedAddressTypeFn = function testSetTaggedAddressTypeFn(arg) {
+                service.setTaggedAddress(arg, '127.0.0.1', 80);
+            };
+
+            correctTypeArguments.forEach((arg) => {
+                it(`correct type argument (${arg.name})`, () => {
+                    testSetTaggedAddressTypeFn(arg.value);
+                });
+            });
         });
 
         describe('register', function () {
@@ -187,32 +239,43 @@ describe('ServiceRegistrator', function () {
                         tags: ['tag1', 'tag2']
                     },
                 },
+                {
+                    init: (service) => {
+                        service.setTaggedAddress(ServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN, '192.168.10.10', 80);
+                    },
+                    arg:  {
+                        name: 'name',
+                        id:   'name.' + pid,
+                        taggedAddresses: {lan: {address: '192.168.10.10', port: 80}}
+                    },
+                },
             ];
             let callNo = 1;
 
             tests.forEach((test) => {
                 let init = test.init;
                 let arg  = test.arg;
-                it('test #' + callNo, function () {
+                it('test #' + callNo, async function () {
                     let consul      = getFakeConsulObject(true);
                     let service     = new ServiceRegistrator(CONSUL_OPTIONS, 'name', 'name.' + pid);
                     service._consul = consul;
                     init(service);
 
                     let consulRegisterStub = sinon.stub(consul.agent.service, 'register');
-                    let registerReturn     = new Promise(() => {
+                    let registerReturn     = new Promise((resolve, reject) => {
+                        resolve();
                     });
 
                     consulRegisterStub.returns(registerReturn);
-                    service.register()
-                        .then(() => {
-                            assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
-                            assert.isTrue(
-                                consulRegisterStub.firstCall.calledWith(arg),
-                                consulRegisterStub.printf('incorrect argument, calls: %C')
-                            );
-                            assert.equal(service.getServiceId(), arg.id);
-                        });
+                    const v = await service.register();
+                    console.log(v);
+
+                    assert.equal(consulRegisterStub.callCount, 1, 'must be called once');
+                    assert.isTrue(
+                        consulRegisterStub.firstCall.calledWith(arg),
+                        consulRegisterStub.printf('incorrect argument, calls: %C')
+                    );
+                    assert.equal(service.getServiceId(), arg.id);
                 });
 
                 callNo++;

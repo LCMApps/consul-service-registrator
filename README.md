@@ -63,7 +63,26 @@ ipAddressDetector.getLanAndWanFromConsul().then(result => {
 
 ### Registrator
 
+```js
+const consulConfig = {
+  "host": consulHost,
+  "port": consulPort
+};
 
+const serviceName = 'example_service_1';
+const servicePort = 8080;
+const serviceId = `${serviceName}_${servicePort}`;
+const s = new ConsulServiceRegistrator(consulConfig, serviceName, serviceId);
+
+s.setAddress("127.0.0.1");
+s.setPort(servicePort);
+s.setTags([`node-${serviceName}`, 'example']);
+s.setTaggedAddress(ConsulServiceRegistrator.TAGGED_ADDRESS_TYPE_LAN, 'domain.priv', 8080);
+s.setTaggedAddress(ConsulServiceRegistrator.TAGGED_ADDRESS_TYPE_WAN, 'domain.pub', 80801);
+
+const overwrite = true;
+await s.register(overwrite);
+```
 
 ## Development
 

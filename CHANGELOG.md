@@ -1,5 +1,12 @@
 # Changelog
 
+### 2.6.0
+
+- New method of ConsulServiceRegistrator - `setTaggedAddress()` 
+- `ConsulServiceRegistrator::setAddress()` may take now not only IP address, but any non-empty string, so you may
+pass fqdn or hostname too.
+
+
 ### 2.5.0
 
 - More docs
